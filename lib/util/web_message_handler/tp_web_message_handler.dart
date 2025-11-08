@@ -269,7 +269,7 @@ class FaceOnKeyboardHealthMessageHandler extends TPWebMessageHandler {
     required bool isMainFrame,
     required Function(WebMessage replyWebMessage)? onReply,
   }) async {
-    debugPrint('[FaceOnKeyboardHealthMessageHandler] Received request from $sourceOrigin');
+    debugPrint('[FaceOnKeyboardHealthMessageHandler] Received request from $sourceOrigin (isMainFrame=$isMainFrame)');
 
     try {
       final HealthService healthService = Get.find<HealthService>();
@@ -285,7 +285,9 @@ class FaceOnKeyboardHealthMessageHandler extends TPWebMessageHandler {
         return;
       }
 
+      debugPrint('[FaceOnKeyboardHealthMessageHandler] Fetching today summary...');
       final HealthSnapshot snapshot = await healthService.fetchTodaySummary();
+      debugPrint('[FaceOnKeyboardHealthMessageHandler] Fetch success -> steps: ${snapshot.steps}, distance: ${snapshot.distanceMeters}');
       onReply?.call(
         replyWebMessage(
           data: snapshot.toJson(),

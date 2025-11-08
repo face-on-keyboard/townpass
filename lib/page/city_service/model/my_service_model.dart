@@ -39,7 +39,7 @@ extension MyServiceIdExt on MyServiceItemId {
           icon: Assets.svg.icon1999.svg(),
           title: '臉滾鍵盤',
           description: 'Face on Keyboard',
-          destinationUrl: 'https://codefest.cwh.me/',
+          destinationUrl: 'http://localhost:3000/',
           category: MyServiceCategory.explore,
           requiresGeoTracking: true),
       MyServiceItemId.dedicatedLine => MyServiceItem(
