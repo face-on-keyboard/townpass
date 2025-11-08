@@ -39,8 +39,9 @@ extension MyServiceIdExt on MyServiceItemId {
           icon: Assets.svg.icon1999.svg(),
           title: '臉滾鍵盤',
           description: 'Face on Keyboard',
-          destinationUrl: 'https://codefest.cwh.me',
-          category: MyServiceCategory.explore),
+          destinationUrl: 'http://localhost:3000',
+          category: MyServiceCategory.explore,
+          requiresGeoTracking: true),
       MyServiceItemId.dedicatedLine => MyServiceItem(
           title: '1999',
           description: '播打網路語音通話',
@@ -205,6 +206,7 @@ class MyServiceItem {
   final String destinationUrl;
   final MyServiceCategory category;
   final String? forceWebViewTitle;
+  final bool requiresGeoTracking;
 
   const MyServiceItem({
     required this.icon,
@@ -213,6 +215,7 @@ class MyServiceItem {
     required this.destinationUrl,
     required this.category,
     this.forceWebViewTitle,
+    this.requiresGeoTracking = false,
   });
 }
 

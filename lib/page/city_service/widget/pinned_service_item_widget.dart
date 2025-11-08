@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:town_pass/gen/assets.gen.dart';
 import 'package:town_pass/page/city_service/model/my_service_model.dart';
+import 'package:town_pass/service/geo_locator_service.dart';
 import 'package:town_pass/util/tp_colors.dart';
 import 'package:town_pass/util/tp_route.dart';
 import 'package:town_pass/util/tp_text.dart';
@@ -23,10 +25,19 @@ class PinnedServiceItemWidget extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       onTap: onTap?.call ??
           switch (service.destinationUrl.isNotEmpty) {
-            true => () async => await TPRoute.openUri(
+            true => () async {
+                final GeoLocatorService geoLocatorService = Get.find<GeoLocatorService>();
+                final bool canProceed = await geoLocatorService.ensureTrackingIfRequired(
+                  requiresTracking: service.requiresGeoTracking,
+                );
+                if (!canProceed) {
+                  return;
+                }
+                await TPRoute.openUri(
                   uri: service.destinationUrl,
                   forceTitle: service.forceWebViewTitle,
-                ),
+                );
+              },
             false => null,
           },
       child: Stack(

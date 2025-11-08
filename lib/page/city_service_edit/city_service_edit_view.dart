@@ -5,6 +5,7 @@ import 'package:town_pass/gen/assets.gen.dart';
 import 'package:town_pass/page/city_service/model/my_service_model.dart';
 import 'package:town_pass/page/city_service/widget/pinned_service_widget.dart';
 import 'package:town_pass/page/city_service_edit/city_service_edit_view_controller.dart';
+import 'package:town_pass/service/geo_locator_service.dart';
 import 'package:town_pass/util/tp_app_bar.dart';
 import 'package:town_pass/util/tp_bottom_sheet.dart';
 import 'package:town_pass/util/tp_button.dart';
@@ -107,8 +108,8 @@ class CityServiceEditView extends GetView<CityServiceEditViewController> {
                         physics: const NeverScrollableScrollPhysics(),
                         itemCount: controller.categoryMap[category]?.length,
                         itemBuilder: (_, index) {
-                          final MyServiceItemId itemId =
-                              controller.categoryMap[category]![index];
+                          final MyServiceItemId itemId = controller.categoryMap[category]![index];
+                          final MyServiceItem item = itemId.item;
                           return Obx(
                             () {
                               return GestureDetector(
@@ -129,9 +130,17 @@ class CityServiceEditView extends GetView<CityServiceEditViewController> {
                                         }
                                     }
                                   } else {
-                                    if (itemId.item.destinationUrl.isNotEmpty) {
+                                    if (item.destinationUrl.isNotEmpty) {
+                                      final GeoLocatorService geoLocatorService = Get.find<GeoLocatorService>();
+                                      final bool canProceed = await geoLocatorService.ensureTrackingIfRequired(
+                                        requiresTracking: item.requiresGeoTracking,
+                                      );
+                                      if (!canProceed) {
+                                        return;
+                                      }
+
                                       await TPRoute.openUri(
-                                        uri: itemId.item.destinationUrl,
+                                        uri: item.destinationUrl,
                                       );
                                     }
                                   }
@@ -143,7 +152,7 @@ class CityServiceEditView extends GetView<CityServiceEditViewController> {
                                     children: [
                                       SizedBox.square(
                                         dimension: 24,
-                                        child: itemId.item.icon,
+                                        child: item.icon,
                                       ),
                                       const SizedBox(width: 16),
                                       Expanded(
@@ -155,7 +164,7 @@ class CityServiceEditView extends GetView<CityServiceEditViewController> {
                                                 CrossAxisAlignment.start,
                                             children: [
                                               TPText(
-                                                itemId.item.title,
+                                                item.title,
                                                 style:
                                                     TPTextStyles.bodySemiBold,
                                                 color: TPColors.grayscale900,
@@ -163,7 +172,7 @@ class CityServiceEditView extends GetView<CityServiceEditViewController> {
                                               ),
                                               const SizedBox(height: 4),
                                               TPText(
-                                                itemId.item.description,
+                                                item.description,
                                                 style: TPTextStyles.caption,
                                                 color: TPColors.grayscale700,
                                                 overflow: TextOverflow.ellipsis,
