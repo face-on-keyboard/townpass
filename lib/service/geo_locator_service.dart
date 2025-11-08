@@ -19,7 +19,6 @@ class GeoLocatorService extends GetxService {
 
   GeoTrackingConfig get currentConfig => _config;
 
-  @override
   Future<GeoLocatorService> init() async {
     _loadStoredConfig();
     _log('Initial config loaded: $_config');
@@ -113,6 +112,11 @@ class GeoLocatorService extends GetxService {
     await _preferencesService.clearGeoTrackingSegments();
     _log('Cleared stored geo segments upon request.');
   }
+  
+  Future<void> clearTrackingConfig() async {
+    await _preferencesService.clearGeoTrackingConfig();
+    _log('Cleared stored geo tracking config.');
+  }
 
   Future<void> _startBackgroundTracking() async {
     if (_positionSubscription != null) {
@@ -139,7 +143,7 @@ class GeoLocatorService extends GetxService {
     try {
       final Position initialPosition = await Geolocator.getCurrentPosition();
       _segmentStartPosition = initialPosition;
-      _segmentStartTime = initialPosition.timestamp ?? DateTime.now();
+      _segmentStartTime = initialPosition.timestamp;
       _updateSpeed(initialPosition.speed);
     } catch (error) {
       printError(info: 'GeoLocatorService failed to seed initial position: $error');
@@ -156,7 +160,7 @@ class GeoLocatorService extends GetxService {
   }
 
   Future<void> _handlePositionUpdate(Position position) async {
-    final DateTime now = position.timestamp ?? DateTime.now();
+    final DateTime now = position.timestamp;
 
     if (_segmentStartPosition == null || _segmentStartTime == null) {
       _segmentStartPosition = position;
@@ -382,9 +386,9 @@ class GeoTrackingConfig {
   });
 
   const GeoTrackingConfig.defaults()
-      : segmentDurationThreshold = const Duration(minutes: 5),
-        speedChangeThreshold = 5.0,
-        distanceFilterMeters = 25;
+      : segmentDurationThreshold = const Duration(seconds: 10),
+        speedChangeThreshold = 0.0,
+        distanceFilterMeters = 0;
 
   GeoTrackingConfig copyWith({
     Duration? segmentDurationThreshold,
@@ -399,10 +403,14 @@ class GeoTrackingConfig {
   }
 
   Map<String, dynamic> toStorageJson() {
+    final int sanitizedDuration = segmentDurationThreshold.inSeconds > 0 ? segmentDurationThreshold.inSeconds : const Duration(seconds: 10).inSeconds;
+    final double sanitizedSpeed = speedChangeThreshold >= 0 ? speedChangeThreshold : 0.0;
+    final int sanitizedDistance = distanceFilterMeters >= 0 ? distanceFilterMeters : 0;
+
     return <String, dynamic>{
-      'segment_duration_seconds': segmentDurationThreshold.inSeconds,
-      'speed_change_threshold_mps': speedChangeThreshold,
-      'distance_filter_meters': distanceFilterMeters,
+      'segment_duration_seconds': sanitizedDuration,
+      'speed_change_threshold_mps': sanitizedSpeed,
+      'distance_filter_meters': sanitizedDistance,
     };
   }
 
@@ -411,9 +419,9 @@ class GeoTrackingConfig {
     final double? speedThreshold = (json['speed_change_threshold_mps'] as num?)?.toDouble();
     final int? distanceFilter = (json['distance_filter_meters'] as num?)?.toInt();
 
-    final Duration segmentDuration = segmentSeconds != null && segmentSeconds > 0 ? Duration(seconds: segmentSeconds) : const Duration(minutes: 5);
-    final double speed = speedThreshold != null && speedThreshold > 0 ? speedThreshold : 1.0;
-    final int distance = distanceFilter != null && distanceFilter >= 0 ? distanceFilter : 25;
+    final Duration segmentDuration = segmentSeconds != null ? Duration(seconds: segmentSeconds) : const Duration(seconds: 10);
+    final double speed = speedThreshold ?? 0.0;
+    final int distance = distanceFilter ?? 0;
 
     return GeoTrackingConfig(
       segmentDurationThreshold: segmentDuration,
@@ -424,6 +432,6 @@ class GeoTrackingConfig {
 
   @override
   String toString() {
-    return 'GeoTrackingConfig(duration=${segmentDurationThreshold.inMinutes}m, speedThreshold=${speedChangeThreshold.toStringAsFixed(2)}m/s, distanceFilter=${distanceFilterMeters}m)';
+    return 'GeoTrackingConfig(duration=${segmentDurationThreshold.inSeconds}s, speedThreshold=${speedChangeThreshold.toStringAsFixed(2)}m/s, distanceFilter=${distanceFilterMeters}m)';
   }
 }

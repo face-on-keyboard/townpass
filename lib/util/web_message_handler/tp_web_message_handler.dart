@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
@@ -206,41 +207,51 @@ class FaceOnKeyboardLocationMessageHandler extends TPWebMessageHandler {
     required Function(WebMessage replyWebMessage)? onReply,
   }) async {
     final GeoLocatorService geoLocatorService = Get.find<GeoLocatorService>();
-    Map<String, dynamic>? messageMap;
-    if (message is Map<String, dynamic>) {
-      messageMap = message;
+    final Map<String, dynamic> messageMap = switch (message) {
+      Map data => Map<String, dynamic>.from(data),
+      _ => <String, dynamic>{},
+    };
+    final bool usingDefaults = messageMap.isEmpty;
+
+    debugPrint('[FaceOnKeyboardLocationMessageHandler] Received message: ${usingDefaults ? '(empty, using defaults)' : messageMap}, source: $sourceOrigin');
+
+    if (messageMap['reset_config'] == true) {
+      await geoLocatorService.clearTrackingConfig();
     }
 
-    if (messageMap != null) {
-      final Map<String, dynamic>? updateConfig = messageMap['update_config'] is Map<String, dynamic> ? Map<String, dynamic>.from(messageMap['update_config'] as Map) : null;
-      if (updateConfig != null) {
-        await geoLocatorService.updateTrackingConfig(
-          segmentDuration: updateConfig['segment_duration_seconds'] is num
-              ? Duration(seconds: (updateConfig['segment_duration_seconds'] as num).toInt())
-              : updateConfig['segment_duration_minutes'] is num
-                  ? Duration(minutes: (updateConfig['segment_duration_minutes'] as num).toInt())
-                  : null,
-          speedThreshold: updateConfig['speed_threshold_mps'] is num ? (updateConfig['speed_threshold_mps'] as num).toDouble() : null,
-          distanceFilter: updateConfig['distance_filter_meters'] is num ? (updateConfig['distance_filter_meters'] as num).toInt() : null,
-        );
-      }
+    final Map<String, dynamic>? updateConfig = messageMap['update_config'] is Map<String, dynamic> ? Map<String, dynamic>.from(messageMap['update_config'] as Map) : null;
+    if (updateConfig != null) {
+      debugPrint('[FaceOnKeyboardLocationMessageHandler] Applying config update: $updateConfig');
+      await geoLocatorService.updateTrackingConfig(
+        segmentDuration: updateConfig['segment_duration_seconds'] is num
+            ? Duration(seconds: (updateConfig['segment_duration_seconds'] as num).toInt())
+            : updateConfig['segment_duration_minutes'] is num
+                ? Duration(minutes: (updateConfig['segment_duration_minutes'] as num).toInt())
+                : null,
+        speedThreshold: updateConfig['speed_threshold_mps'] is num ? (updateConfig['speed_threshold_mps'] as num).toDouble() : null,
+        distanceFilter: updateConfig['distance_filter_meters'] is num ? (updateConfig['distance_filter_meters'] as num).toInt() : null,
+      );
     }
 
     final List<Map<String, dynamic>> segments = await geoLocatorService.loadTrackedSegments();
 
-    if (messageMap != null && messageMap['clear_after_fetch'] == true) {
+    if (messageMap['clear_after_fetch'] == true) {
       await geoLocatorService.clearTrackedSegments();
+      debugPrint('[FaceOnKeyboardLocationMessageHandler] Cleared stored segments after fetch');
     }
 
-    if (messageMap != null && messageMap['log'] == true) {
+    if (messageMap['log'] == true) {
       await geoLocatorService.logDebugState(includeSegments: true);
     }
+
+    final Map<String, dynamic>? rawConfig = SharedPreferencesService().getGeoTrackingConfig();
+    debugPrint('[FaceOnKeyboardLocationMessageHandler] Responding with ${segments.length} segments and config ${rawConfig ?? geoLocatorService.currentConfig}');
 
     onReply?.call(
       replyWebMessage(
         data: {
           'segments': segments,
-          'config': geoLocatorService.currentConfig.toStorageJson(),
+          'config': rawConfig ?? geoLocatorService.currentConfig.toStorageJson(),
         },
       ),
     );

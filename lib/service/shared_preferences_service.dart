@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -33,6 +34,7 @@ class SharedPreferencesService extends GetxService {
 
   List<Map<String, dynamic>> getGeoTrackingSegments() {
     final List<String> rawList = instance.getStringList(keyGeoTrackingSegments) ?? <String>[];
+    debugPrint('[SharedPreferencesService] Loaded ${rawList.length} geo segments');
     return rawList
         .map((entry) {
           try {
@@ -53,9 +55,11 @@ class SharedPreferencesService extends GetxService {
     final int limit = maxSegments ?? _defaultGeoTrackingSegmentLimit;
     final List<String> rawList = instance.getStringList(keyGeoTrackingSegments) ?? <String>[];
     rawList.add(jsonEncode(segment));
+    debugPrint('[SharedPreferencesService] Appending geo segment (count after append: ${rawList.length})');
 
     if (rawList.length > limit) {
       rawList.removeRange(0, rawList.length - limit);
+      debugPrint('[SharedPreferencesService] Trimmed geo segments to limit $limit');
     }
 
     await instance.setStringList(keyGeoTrackingSegments, rawList);
@@ -63,16 +67,24 @@ class SharedPreferencesService extends GetxService {
 
   Future<void> clearGeoTrackingSegments() async {
     await instance.remove(keyGeoTrackingSegments);
+    debugPrint('[SharedPreferencesService] Cleared geo segments');
+  }
+
+  Future<void> clearGeoTrackingConfig() async {
+    await instance.remove(keyGeoTrackingConfig);
+    debugPrint('[SharedPreferencesService] Cleared geo tracking config');
   }
 
   Map<String, dynamic>? getGeoTrackingConfig() {
     final String? rawJson = instance.getString(keyGeoTrackingConfig);
     if (rawJson == null) {
+      debugPrint('[SharedPreferencesService] No geo tracking config found in storage');
       return null;
     }
     try {
       final Object? decoded = jsonDecode(rawJson);
       if (decoded is Map<String, dynamic>) {
+        debugPrint('[SharedPreferencesService] Loaded geo tracking config: $decoded');
         return decoded;
       }
     } catch (_) {
@@ -83,5 +95,6 @@ class SharedPreferencesService extends GetxService {
 
   Future<void> setGeoTrackingConfig(Map<String, dynamic> config) async {
     await instance.setString(keyGeoTrackingConfig, jsonEncode(config));
+    debugPrint('[SharedPreferencesService] Persisted geo tracking config: $config');
   }
 }
