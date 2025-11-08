@@ -58,6 +58,8 @@
         <string>This app needs camera access to scan QR codes</string>
         <key>NSPhotoLibraryUsageDescription</key>
         <string>This app needs photos access to get QR code from photo library</string>
+		<key>NSHealthShareUsageDescription</key>
+		<string>Need access to your activity data to show daily steps and distance in the app.</string>
 		<key>UIStatusBarHidden</key>
 		<false/>
 	</dict>
