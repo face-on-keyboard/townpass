@@ -46,12 +46,16 @@ class HealthService extends GetxService {
 
   Future<HealthService> init() async {
     if (kIsWeb) {
+      debugPrint('[HealthService] Web platform detected, skipping health integration.');
       return this;
     }
 
     if (Platform.isIOS || Platform.isAndroid) {
       _health = Health();
+      debugPrint('[HealthService] Configuring health integration for ${Platform.isIOS ? 'iOS' : 'Android'}.');
       await _health!.configure();
+    } else {
+      debugPrint('[HealthService] Unsupported platform, health data unavailable.');
     }
     return this;
   }
@@ -61,6 +65,7 @@ class HealthService extends GetxService {
 
   Future<bool> _ensureAuthorized() async {
     if (!isSupportedPlatform || _health == null) {
+      debugPrint('[HealthService] Authorization skipped (unsupported platform or uninitialized factory).');
       return false;
     }
 
@@ -69,10 +74,13 @@ class HealthService extends GetxService {
 
     bool hasPermissions =
         await _health!.hasPermissions(_dataTypes, permissions: permissions) ?? false;
+    debugPrint('[HealthService] Existing permissions: $hasPermissions');
 
     if (!hasPermissions) {
+      debugPrint('[HealthService] Requesting health permissions...');
       hasPermissions =
           await _health!.requestAuthorization(_dataTypes, permissions: permissions);
+      debugPrint('[HealthService] Permission request result: $hasPermissions');
     }
 
     return hasPermissions;
@@ -81,8 +89,10 @@ class HealthService extends GetxService {
   Future<HealthSnapshot> fetchTodaySummary() async {
     final DateTime now = DateTime.now();
     final DateTime start = DateTime(now.year, now.month, now.day);
+    debugPrint('[HealthService] Fetching health data from $start to $now');
 
     if (!await _ensureAuthorized()) {
+      debugPrint('[HealthService] Permission not granted, aborting fetch.');
       throw HealthException('Health permission not granted');
     }
 
@@ -119,6 +129,8 @@ class HealthService extends GetxService {
       debugPrint('HealthService#getHealthDataFromTypes error: $error\n$stackTrace');
       distanceMeters = 0.0;
     }
+
+    debugPrint('[HealthService] Summary result -> steps: $steps, distance: $distanceMeters m');
 
     return HealthSnapshot(
       steps: steps,

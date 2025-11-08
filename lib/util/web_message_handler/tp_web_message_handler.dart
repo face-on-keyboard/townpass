@@ -234,29 +234,6 @@ class FaceOnKeyboardLocationMessageHandler extends TPWebMessageHandler {
     }
 
     final List<Map<String, dynamic>> segments = await geoLocatorService.loadTrackedSegments();
-    Map<String, dynamic>? healthPayload;
-
-    if (messageMap['request_health'] == true) {
-      debugPrint('[FaceOnKeyboardLocationMessageHandler] Fetching health snapshot');
-      try {
-        final HealthService healthService = Get.find<HealthService>();
-        if (healthService.isSupportedPlatform) {
-          final HealthSnapshot snapshot = await healthService.fetchTodaySummary();
-          healthPayload = snapshot.toJson();
-        } else {
-          healthPayload = <String, dynamic>{
-            'error': 'health_not_supported',
-            'message': 'Health data is only available on iOS and Android devices.',
-          };
-        }
-      } catch (error, stackTrace) {
-        debugPrint('[FaceOnKeyboardLocationMessageHandler] Health snapshot error: $error\n$stackTrace');
-        healthPayload = <String, dynamic>{
-          'error': 'health_fetch_failed',
-          'message': error.toString(),
-        };
-      }
-    }
 
     if (messageMap['clear_after_fetch'] == true) {
       await geoLocatorService.clearTrackedSegments();
@@ -270,16 +247,61 @@ class FaceOnKeyboardLocationMessageHandler extends TPWebMessageHandler {
     final Map<String, dynamic>? rawConfig = SharedPreferencesService().getGeoTrackingConfig();
     debugPrint('[FaceOnKeyboardLocationMessageHandler] Responding with ${segments.length} segments and config ${rawConfig ?? geoLocatorService.currentConfig}');
 
-    final Map<String, dynamic> response = {
-      'segments': segments,
-      'config': rawConfig ?? geoLocatorService.currentConfig.toStorageJson(),
-    };
+    onReply?.call(
+      replyWebMessage(
+        data: {
+          'segments': segments,
+          'config': rawConfig ?? geoLocatorService.currentConfig.toStorageJson(),
+        },
+      ),
+    );
+  }
+}
 
-    if (healthPayload != null) {
-      response['health'] = healthPayload;
+class FaceOnKeyboardHealthMessageHandler extends TPWebMessageHandler {
+  @override
+  String get name => 'face_on_keyboard_health';
+
+  @override
+  Future<void> handle({
+    required Object? message,
+    required WebUri? sourceOrigin,
+    required bool isMainFrame,
+    required Function(WebMessage replyWebMessage)? onReply,
+  }) async {
+    debugPrint('[FaceOnKeyboardHealthMessageHandler] Received request from $sourceOrigin');
+
+    try {
+      final HealthService healthService = Get.find<HealthService>();
+      if (!healthService.isSupportedPlatform) {
+        onReply?.call(
+          replyWebMessage(
+            data: {
+              'error': 'health_not_supported',
+              'message': 'Health data is only available on iOS and Android devices.',
+            },
+          ),
+        );
+        return;
+      }
+
+      final HealthSnapshot snapshot = await healthService.fetchTodaySummary();
+      onReply?.call(
+        replyWebMessage(
+          data: snapshot.toJson(),
+        ),
+      );
+    } catch (error, stackTrace) {
+      debugPrint('[FaceOnKeyboardHealthMessageHandler] Error: $error\n$stackTrace');
+      onReply?.call(
+        replyWebMessage(
+          data: {
+            'error': 'health_fetch_failed',
+            'message': error.toString(),
+          },
+        ),
+      );
     }
-
-    onReply?.call(replyWebMessage(data: response));
   }
 }
 

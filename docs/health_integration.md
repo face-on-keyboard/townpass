@@ -41,31 +41,31 @@ This feature reads the user’s activity metrics (steps, walking/running distanc
 
 ## Web message contract
 
-The Face on Keyboard web view can include the following when posting to `face_on_keyboard_location`:
+Call the dedicated handler `face_on_keyboard_health`:
 
 ```json
 {
-  "name": "face_on_keyboard_location",
-  "data": {
-    "request_health": true
-  }
+  "name": "face_on_keyboard_health"
 }
 ```
 
-If `request_health` is `true`, the app replies with:
+The response payload is either the snapshot:
 
 ```json
 {
-  "segments": [...],
-  "config": {...},
-  "health": {
-    "steps": 1234,
-    "distance_meters": 456.7,
-    "start_time": "2025-11-08T00:00:00Z",
-    "end_time": "2025-11-08T08:15:30Z"
-  }
+  "steps": 1234,
+  "distance_meters": 456.7,
+  "start_time": "2025-11-08T00:00:00Z",
+  "end_time": "2025-11-08T08:15:30Z"
 }
 ```
 
-If HealthKit / Google Fit permissions are missing or the platform is unsupported, the `health` field contains an error object describing the failure so the web layer can react accordingly.
+or an error object such as:
+
+```json
+{
+  "error": "health_not_supported",
+  "message": "Health data is only available on iOS and Android devices."
+}
+```
 
