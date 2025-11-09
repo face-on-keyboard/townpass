@@ -36,10 +36,10 @@ extension MyServiceIdExt on MyServiceItemId {
   MyServiceItem get item {
     return switch (this) {
       MyServiceItemId.newService => MyServiceItem(
-          icon: Assets.svg.icon1999.svg(),
-          title: '臉滾鍵盤',
-          description: 'Face on Keyboard',
-          destinationUrl: 'http://localhost:3000/',
+          icon: Assets.svg.carbonNotebook.svg(),
+          title: '咔嘣筆記',
+          description: 'Carbon Notebook',
+          destinationUrl: 'http://192.168.99.223:3000',
           category: MyServiceCategory.explore,
           requiresGeoTracking: true),
       MyServiceItemId.dedicatedLine => MyServiceItem(
