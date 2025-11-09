@@ -386,8 +386,8 @@ class GeoTrackingConfig {
 
   const GeoTrackingConfig.defaults()
       : segmentDurationThreshold = const Duration(seconds: 60),
-        speedChangeThreshold = 0.0,
-        distanceFilterMeters = 0;
+        speedChangeThreshold = 0.05,
+        distanceFilterMeters = 2;
 
   GeoTrackingConfig copyWith({
     Duration? segmentDurationThreshold,
@@ -402,9 +402,9 @@ class GeoTrackingConfig {
   }
 
   Map<String, dynamic> toStorageJson() {
-    final int sanitizedDuration = segmentDurationThreshold.inSeconds > 0 ? segmentDurationThreshold.inSeconds : const Duration(seconds: 10).inSeconds;
-    final double sanitizedSpeed = speedChangeThreshold >= 0 ? speedChangeThreshold : 0.0;
-    final int sanitizedDistance = distanceFilterMeters >= 0 ? distanceFilterMeters : 0;
+    final int sanitizedDuration = segmentDurationThreshold.inSeconds > 0 ? segmentDurationThreshold.inSeconds : const Duration(seconds: 60).inSeconds;
+    final double sanitizedSpeed = speedChangeThreshold > 0 ? speedChangeThreshold : 0.05;
+    final int sanitizedDistance = distanceFilterMeters > 0 ? distanceFilterMeters : 2;
 
     return <String, dynamic>{
       'segment_duration_seconds': sanitizedDuration,
@@ -419,8 +419,8 @@ class GeoTrackingConfig {
     final int? distanceFilter = (json['distance_filter_meters'] as num?)?.toInt();
 
     final Duration segmentDuration = segmentSeconds != null ? Duration(seconds: segmentSeconds) : const Duration(seconds: 60);
-    final double speed = speedThreshold ?? 0.0;
-    final int distance = distanceFilter ?? 0;
+    final double speed = speedThreshold ?? 0.05;
+    final int distance = distanceFilter ?? 2;
 
     return GeoTrackingConfig(
       segmentDurationThreshold: segmentDuration,
