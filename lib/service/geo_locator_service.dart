@@ -385,7 +385,7 @@ class GeoTrackingConfig {
   });
 
   const GeoTrackingConfig.defaults()
-      : segmentDurationThreshold = const Duration(seconds: 10),
+      : segmentDurationThreshold = const Duration(seconds: 60),
         speedChangeThreshold = 0.0,
         distanceFilterMeters = 0;
 
@@ -418,7 +418,7 @@ class GeoTrackingConfig {
     final double? speedThreshold = (json['speed_change_threshold_mps'] as num?)?.toDouble();
     final int? distanceFilter = (json['distance_filter_meters'] as num?)?.toInt();
 
-    final Duration segmentDuration = segmentSeconds != null ? Duration(seconds: segmentSeconds) : const Duration(seconds: 10);
+    final Duration segmentDuration = segmentSeconds != null ? Duration(seconds: segmentSeconds) : const Duration(seconds: 60);
     final double speed = speedThreshold ?? 0.0;
     final int distance = distanceFilter ?? 0;
 
